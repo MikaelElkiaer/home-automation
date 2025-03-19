@@ -18,7 +18,7 @@ body { margin: 0; padding: 0; }
   const map = new mapboxgl.Map({
       container: 'map',
       // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-      //style: 'mapbox://styles/mapbox/dark-v11',
+      style: 'mapbox://styles/mapbox/streets-v12',
       center: [ 9.93809816131456, 57.00256595817176 ],
       zoom: 20,
       pitch: 40,
@@ -29,6 +29,7 @@ body { margin: 0; padding: 0; }
   map.on('load', async () => {
       const response = await fetch('/data.geojson');
       const data = await response.json();
+      console.log(data);
       let lastModified = response.headers.get('Last-Modified');
       map.addSource('floorplan', {
           'type': 'geojson',
@@ -45,7 +46,7 @@ body { margin: 0; padding: 0; }
           console.log('Updating data');
           lastModified = newLastModified;
           map.getSource('floorplan').setData(data);
-      }, 500);
+      }, 1000);
       map.addLayer({
           'id': 'room-extrusion',
           'type': 'fill-extrusion',
