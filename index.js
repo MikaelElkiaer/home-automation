@@ -1,283 +1,248 @@
 import * as fs from "node:fs";
 import * as turf from "@turf/turf";
 
-const top_left = turf.point([9.938003897673866, 57.002646495178205]);
-const top_right = turf.point([9.93826499461693, 57.00259522346104]);
-const bottom_right = turf.point([9.938192188746712, 57.00248515991985]);
-const bottom_left = turf.point([9.937931091781024, 57.00253711542363]);
-const bearing_x = turf.bearing(bottom_left, bottom_right);
-const bearing_y = turf.bearing(bottom_left, top_left);
+const CM_PER_KM = 1_000_00;
+const TL = turf.point([9.938003897673866, 57.002646495178205]);
+const TR = turf.point([9.93826499461693, 57.00259522346104]);
+const BR = turf.point([9.938192188746712, 57.00248515991985]);
+const BL = turf.point([9.937931091781024, 57.00253711542363]);
+const X = turf.bearing(BL, BR);
+const Y = turf.bearing(BL, TL);
 
-const foundation = turf.polygon(
-  [
-    [
-      top_left.geometry.coordinates,
-      top_right.geometry.coordinates,
-      bottom_right.geometry.coordinates,
-      bottom_left.geometry.coordinates,
-      top_left.geometry.coordinates,
-    ],
-  ],
-  {
+const cm = (value) => value / CM_PER_KM;
+const km = (value) => value * CM_PER_KM;
+const map = (points) => points.map((p) => p.geometry.coordinates);
+const down = (p, distance) => turf.transformTranslate(p, -cm(distance), Y);
+const up = (p, distance) => turf.transformTranslate(p, cm(distance), Y);
+const left = (p, distance) => turf.transformTranslate(p, -cm(distance), X);
+const right = (p, distance) => turf.transformTranslate(p, cm(distance), X);
+const point = (polygon, index) =>
+  turf.point(polygon.geometry.coordinates[0][index]);
+const dist = (p1, p2) => km(turf.distance(p1, p2));
+
+const WALL_THICKNESS = 15;
+
+let features = {};
+
+features.foundation = (() => {
+  let points = [TL, BL, BR, TR, TL];
+  return turf.polygon([map(points)], {
     base_height: 0,
     color: "gray",
     height: 2.99,
     level: 0,
-  },
-);
-
-let room1, room1_br, room1_tl;;
-const wall = 0.0002;
-(() => {
-  const bl = turf.transformTranslate(
-    turf.transformTranslate(bottom_left, wall, bearing_y),
-    wall,
-    bearing_x,
-  );
-  const tl = turf.transformTranslate(bl, 0.004, bearing_y);
-  const tr = turf.transformTranslate(tl, 0.003, bearing_x);
-  const br = turf.transformTranslate(tr, -0.004, bearing_y);
-  room1_br = br;
-  room1_tl = tl;
-  room1 = turf.polygon(
-    [
-      [
-        bl.geometry.coordinates,
-        tl.geometry.coordinates,
-        tr.geometry.coordinates,
-        br.geometry.coordinates,
-        bl.geometry.coordinates,
-      ],
-    ],
-    {
-      base_height: 3,
-      color: "purple",
-      height: 3,
-      level: 1,
-    },
-  );
-})();
-
-let room2, room2_br;
-(() => {
-  const bl = turf.transformTranslate(room1_br, wall, bearing_x);
-  const tl = turf.transformTranslate(bl, 0.004, bearing_y);
-  const tr = turf.transformTranslate(tl, 0.003, bearing_x);
-  const br = turf.transformTranslate(tr, -0.004, bearing_y);
-  room2_br = br;
-  room2 = turf.polygon(
-    [
-      [
-        bl.geometry.coordinates,
-        tl.geometry.coordinates,
-        tr.geometry.coordinates,
-        br.geometry.coordinates,
-        bl.geometry.coordinates,
-      ],
-    ],
-    {
-      base_height: 3,
-      color: "yellow",
-      height: 3,
-      level: 1,
-    },
-  );
-})();
-
-let room3, room3_br;
-(() => {
-  const bl = turf.transformTranslate(room2_br, wall, bearing_x);
-  const tl = turf.transformTranslate(bl, 0.004, bearing_y);
-  const tr = turf.transformTranslate(tl, 0.003, bearing_x);
-  const br = turf.transformTranslate(tr, -0.004, bearing_y);
-  room3_br = br;
-  room3 = turf.polygon(
-    [
-      [
-        bl.geometry.coordinates,
-        tl.geometry.coordinates,
-        tr.geometry.coordinates,
-        br.geometry.coordinates,
-        bl.geometry.coordinates,
-      ],
-    ],
-    {
-      base_height: 3,
-      color: "blue",
-      height: 3,
-      level: 1,
-    },
-  );
-})();
-
-let livingroom, livingroom_tr;
-(() => {
-  let points = [];
-  points[0] = turf.transformTranslate(room3_br, wall, bearing_x);
-  points[1] = turf.transformTranslate(
-    turf.transformTranslate(bottom_right, -wall, bearing_x),
-    wall,
-    bearing_y
-  );
-  points[2] = turf.transformTranslate(points[1], 0.006, bearing_y);
-  const dist = turf.distance(points[0], points[1]);
-  points[3] = turf.transformTranslate(points[2], -dist, bearing_x);
-  points[4] = turf.transformTranslate(points[3], -0.003, bearing_y);
-  points[5] = turf.transformTranslate(points[4], 0.002, bearing_x);
-  points[6] = turf.transformTranslate(points[5], -0.3/1000, bearing_y);
-  points[7] = turf.transformTranslate(points[6], -0.002, bearing_x);
-  points[8] = points[0];
-  livingroom_tr = points[2];
-  livingroom = turf.polygon(
-    [points.map((point) => point.geometry.coordinates)],
-    {
-      base_height: 3,
-      color: "brown",
-      height: 3,
-      level: 1,
-    },
-  );
-})();
-
-let entrance;
-(() => {
-  let points = [];
-  points[0] = turf.transformTranslate(
-    turf.transformTranslate(top_right, -wall, bearing_x),
-    -wall,
-    bearing_y,
-  );
-  points[1] = turf.transformTranslate(livingroom_tr, wall, bearing_y);
-  points[2] = turf.transformTranslate(points[1], -0.002, bearing_x);
-  const dist = turf.distance(points[0], points[1]);
-  points[3] = turf.transformTranslate(points[2], dist, bearing_y);
-  points[4] = points[0];
-  entrance = turf.polygon([points.map((point) => point.geometry.coordinates)], {
-    base_height: 3,
-    color: "lightgray",
-    height: 3,
-    level: 1,
+    name: "Foundation",
   });
 })();
 
-let bedroom, bedroom_tr;
-(() => {
+features.bedroom = (() => {
   let points = [];
-  points[0] = turf.transformTranslate(
-    turf.transformTranslate(top_left, wall, bearing_x),
-    -wall,
-    bearing_y,
-  );
-  points[1] = turf.transformTranslate(points[0], 3.9/1000, bearing_x);
-  points[2] = turf.transformTranslate(points[1], -3.5/1000, bearing_y);
-  points[3] = turf.transformTranslate(points[2], -3.9/1000, bearing_x);
-  points[4] = points[0];
-  bedroom_tr = points[1];
-  bedroom = turf.polygon([points.map((point) => point.geometry.coordinates)], {
+  points.push(TL);
+  points.push(down(points[0], 350));
+  points.push(right(points[1], 390));
+  points.push(up(points[2], 350));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
     base_height: 3,
     color: "red",
     height: 3,
     level: 1,
+    name: "Bedroom",
   });
 })();
 
-let room4;
-(() => {
+features.bathroom = (() => {
   let points = [];
-  points[0] = turf.transformTranslate(
-    room1_tl,
-    wall,
-    bearing_y);
-  points[1] = turf.transformTranslate(points[0], 3.5/1000, bearing_y);
-  points[2] = turf.transformTranslate(points[1], 3.5/1000, bearing_x);
-  points[3] = turf.transformTranslate(points[2], -2.3/1000, bearing_y);
-  points[4] = turf.transformTranslate(points[3], -1.5/1000, bearing_x);
-  points[5] = turf.transformTranslate(points[4], -1.2/1000, bearing_y);
-  points[6] = points[0];
-  room4 = turf.polygon([points.map((point) => point.geometry.coordinates)], {
-    base_height: 3,
-    color: "green",
-    height: 3,
-    level: 1,
-  });
-})();
-
-let bathroom, bathroom_br;
-(() => {
-  let points = [];
-  points[0] = turf.transformTranslate(
-    bedroom_tr,
-    wall,
-    bearing_x);
-  points[1] = turf.transformTranslate(points[0], 3.2/1000, bearing_x);
-  points[2] = turf.transformTranslate(points[1], -1.8/1000, bearing_y);
-  points[3] = turf.transformTranslate(points[2], -1.1/1000, bearing_x);
-  points[4] = turf.transformTranslate(points[3], -1.7/1000, bearing_y);
-  points[5] = turf.transformTranslate(points[4], -2.1/1000, bearing_x);
-  points[6] = points[0];
-  bathroom_br = points[4];
-  bathroom = turf.polygon([points.map((point) => point.geometry.coordinates)], {
+  points.push(point(features.bedroom, 3));
+  points.push(down(points[0], 350));
+  points.push(right(points[1], 200));
+  points.push(up(points[2], 175));
+  points.push(right(points[3], 100));
+  points.push(up(points[4], 175));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
     base_height: 3,
     color: "cyan",
     height: 3,
     level: 1,
+    name: "Bathroom",
   });
 })();
 
-let hallway;
-(() => {
+features.toilet = (() => {
   let points = [];
-  points[0] = turf.transformTranslate(
-    bathroom_br,
-    -wall,
-    bearing_y);
-  points[1] = turf.transformTranslate(points[0], -1.1/1000, bearing_y);
-  points[2] = turf.transformTranslate(points[1], -4/1000, bearing_x);
-  points[3] = turf.transformTranslate(points[2], 1.1/1000, bearing_y);
-  points[4] = points[0];
-  hallway = turf.polygon([points.map((point) => point.geometry.coordinates)], {
+  points.push(point(features.bathroom, 3));
+  points.push(down(points[0], 175));
+  points.push(right(points[1], 100));
+  points.push(up(points[2], 175));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
+    base_height: 3,
+    color: "pink",
+    height: 3,
+    level: 1,
+    name: "Toilet",
+  });
+})();
+
+features.room1 = (() => {
+  let points = [];
+  points.push(up(BL, 400));
+  points.push(down(points[0], 400));
+  points.push(right(points[1], 300));
+  points.push(up(points[2], 400));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
+    base_height: 3,
+    color: "purple",
+    height: 3,
+    level: 1,
+    name: "Room 1",
+  });
+})();
+
+features.room2 = (() => {
+  let points = [];
+  points.push(point(features.room1, 3));
+  points.push(down(points[0], 400));
+  points.push(right(points[1], 300));
+  points.push(up(points[2], 400));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
+    base_height: 3,
+    color: "yellow",
+    height: 3,
+    level: 1,
+    name: "Room 2",
+  });
+})();
+
+features.room3 = (() => {
+  let points = [];
+  points.push(point(features.room2, 3));
+  points.push(down(points[0], 400));
+  points.push(right(points[1], 300));
+  points.push(up(points[2], 400));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
+    base_height: 3,
+    color: "blue",
+    height: 3,
+    level: 1,
+    name: "Room 3",
+  });
+})();
+
+features.room4 = (() => {
+  let points = [];
+  points.push(up(point(features.room1, 0), 365));
+  points.push(down(points[0], 365));
+  points.push(right(points[1], 200));
+  points.push(up(points[2], 140));
+  points.push(right(points[3], 150));
+  points.push(up(points[4], 225));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
+    base_height: 3,
+    color: "green",
+    height: 3,
+    level: 1,
+    name: "Room 4",
+  });
+})();
+
+features.hallway = (() => {
+  let points = [];
+  points.push(right(point(features.bedroom, 1), 210));
+  points.push(right(point(features.room4, 0), 210));
+  let height = dist(points[0], points[1]);
+  points.push(down(point(features.bathroom, 2), height));
+  points.push(point(features.bathroom, 2));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
+    base_height: 3,
+    color: "lightgrey",
+    height: 3,
+    level: 1,
+    name: "Hallway",
+  });
+})();
+
+features.entrance = (() => {
+  let points = [];
+  points.push(left(TR, 170));
+  points.push(down(points[0], 490));
+  points.push(right(points[1], 170));
+  points.push(up(points[2], 490));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
     base_height: 3,
     color: "lightgray",
     height: 3,
     level: 1,
+    name: "Entrance",
   });
 })();
 
-let allwall;
-(() => {
-  allwall = turf.difference(
-    turf.featureCollection([
-      foundation,
-      room1,
-      room2,
-      room3,
-      livingroom,
-      entrance,
-      bedroom,
-      room4,
-      bathroom,
-      hallway,
-    ]),
-  );
-  allwall.properties = {
+features.livingroom = (() => {
+  let points = [];
+  points.push(point(features.room3, 3));
+  points.push(down(points[0], 400));
+  points.push(BR);
+  points.push(point(features.entrance, 2));
+  let width = turf.distance(points[1], points[2]);
+  points.push(left(points[3], width * 1_000_00));
+  points.push(points[0]);
+  // TODO: Add half-wall
+  return turf.polygon([map(points)], {
     base_height: 3,
-    color: "gray",
-    height: 5,
+    color: "brown",
+    height: 3,
     level: 1,
-  };
+    name: "Living Room",
+  });
 })();
 
-const features = turf.featureCollection([
-  foundation,
-  room1,
-  room2,
-  room3,
-  livingroom,
-  allwall,
-  entrance,
-  bedroom,
-  room4,
-  bathroom,
-  hallway,
-]);
-fs.writeFileSync("./data.geojson", JSON.stringify(features));
+features.bigroom = (() => {
+  let points = [];
+  points.push(point(features.bathroom, 5));
+  points.push(point(features.toilet, 2));
+  points.push(point(features.hallway, 3));
+  points.push(point(features.hallway, 2));
+  points.push(point(features.room4, 5));
+  points.push(point(features.room4, 4));
+  points.push(point(features.room4, 3));
+  points.push(point(features.room4, 2));
+  points.push(point(features.room2, 0));
+  points.push(point(features.room3, 3));
+  points.push(point(features.livingroom, 4));
+  points.push(point(features.entrance, 1));
+  points.push(point(features.entrance, 0));
+  points.push(points[0]);
+  return turf.polygon([map(points)], {
+    base_height: 3,
+    color: "orange",
+    height: 3,
+    level: 1,
+    name: "Big Room",
+  });
+})();
+
+let shrink_room = (feature, thickness) => {
+  let points = feature.geometry.coordinates[0];
+  let center = turf.centerOfMass(feature);
+  let distance = Math.sqrt(Math.pow(thickness, 2) + Math.pow(thickness, 2));
+  let new_points = points.slice(0, -1).map((p) => {
+    // TODO: translate p to center, normalized by bearing
+    return p;
+  });
+  new_points.push(new_points[0]);
+  feature.geometry.coordinates = [new_points];
+};
+
+Object.values(features).forEach((feature) => {
+  shrink_room(feature, WALL_THICKNESS);
+});
+
+let featureCollection = turf.featureCollection(Object.values(features));
+fs.writeFileSync("./data.geojson", JSON.stringify(featureCollection));
