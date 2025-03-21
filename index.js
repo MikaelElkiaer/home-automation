@@ -6,25 +6,27 @@ const TL = turf.point([9.938003897673866, 57.002646495178205]);
 const TR = turf.point([9.93826499461693, 57.00259522346104]);
 const BR = turf.point([9.938192188746712, 57.00248515991985]);
 const BL = turf.point([9.937931091781024, 57.00253711542363]);
-const X = turf.bearing(BL, BR);
-const Y = turf.bearing(BL, TL);
+const BEARING_LR = turf.bearing(BL, BR);
+const BEARING_RL = turf.bearing(BR, BL);
+const BEARING_BT = turf.bearing(BL, TL);
+const BEARING_TB = turf.bearing(TL, BL);
 
 const cm = (value) => value / CM_PER_KM;
 const km = (value) => value * CM_PER_KM;
 const map = (points) => points.map((p) => p.geometry.coordinates);
-const down = (p, distance) => turf.transformTranslate(p, -cm(distance), Y);
-const up = (p, distance) => turf.transformTranslate(p, cm(distance), Y);
-const left = (p, distance) => turf.transformTranslate(p, -cm(distance), X);
-const right = (p, distance) => turf.transformTranslate(p, cm(distance), X);
+const down = (p, distance) => turf.transformTranslate(p, -cm(distance), BEARING_BT);
+const up = (p, distance) => turf.transformTranslate(p, cm(distance), BEARING_BT);
+const left = (p, distance) => turf.transformTranslate(p, -cm(distance), BEARING_LR);
+const right = (p, distance) => turf.transformTranslate(p, cm(distance), BEARING_LR);
 const point = (polygon, index) =>
   turf.point(polygon.geometry.coordinates[0][index]);
 const dist = (p1, p2) => km(turf.distance(p1, p2));
 
-const WALL_THICKNESS = 15;
+const WALL_THICKNESS = 10;
 
 let features = {};
 
-features.foundation = (() => {
+let foundation = (() => {
   let points = [TL, BL, BR, TR, TL];
   return turf.polygon([map(points)], {
     base_height: 0,
@@ -229,20 +231,42 @@ features.bigroom = (() => {
 })();
 
 let shrink_room = (feature, thickness) => {
+  let shrunk = [];
   let points = feature.geometry.coordinates[0];
-  let center = turf.centerOfMass(feature);
-  let distance = Math.sqrt(Math.pow(thickness, 2) + Math.pow(thickness, 2));
-  let new_points = points.slice(0, -1).map((p) => {
-    // TODO: translate p to center, normalized by bearing
-    return p;
-  });
-  new_points.push(new_points[0]);
-  feature.geometry.coordinates = [new_points];
+  for (let i = 0; i < points.length - 1; i++) {
+    let prev = turf.point(i == 0 ? points[points.length - 2] : points[i - 1]);
+    let curr = turf.point(points[i]);
+    let next = turf.point(points[i + 1]);
+    let angle = Math.round(turf.angle(prev, curr, next));
+    let bearing_prev = turf.bearing(prev, curr);
+    let bearing_next = turf.bearing(curr, next);
+    if (angle == 180) {
+      curr = turf.destination(curr, cm(thickness), bearing_prev-90);
+    } else if (angle < 180) {
+      curr = turf.destination(curr, cm(thickness), bearing_prev+180);
+      curr = turf.destination(curr, cm(thickness), bearing_next);
+    } else if (angle > 180) {
+      curr = turf.destination(curr, cm(thickness), bearing_prev);
+      curr = turf.destination(curr, cm(thickness), bearing_next+180);
+    }
+    shrunk.push(curr.geometry.coordinates);
+  }
+  shrunk.push(shrunk[0]);
+  feature.geometry.coordinates = [shrunk];
 };
 
 Object.values(features).forEach((feature) => {
   shrink_room(feature, WALL_THICKNESS);
 });
 
-let featureCollection = turf.featureCollection(Object.values(features));
+let walls = turf.difference(turf.featureCollection([foundation].concat(Object.values(features))));
+walls.properties = {
+  base_height: 3,
+  color: "gray",
+  height: 5,
+  level: 1,
+  name: "Walls",
+};
+
+let featureCollection = turf.featureCollection(Object.values(features).concat(foundation, walls));
 fs.writeFileSync("./data.geojson", JSON.stringify(featureCollection));
