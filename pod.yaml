@@ -12,16 +12,10 @@ spec:
         - containerPort: 8080
           hostPort: 8080
       volumeMounts:
-        - name: data
-          mountPath: /usr/share/nginx/html/data.geojson
-        - name: index
-          mountPath: /usr/share/nginx/html/index.html
+        - name: html
+          mountPath: /usr/share/nginx/html/
   volumes:
-    - name: index
+    - name: html
       hostPath:
-        path: ./index.html
-        type: File
-    - name: data
-      hostPath:
-        path: ./data.geojson
-        type: File
+        path: ./static/
+        type: Directory

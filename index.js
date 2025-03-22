@@ -14,14 +14,19 @@ const BEARING_TB = turf.bearing(TL, BL);
 const cm = (value) => value / CM_PER_KM;
 const km = (value) => value * CM_PER_KM;
 const map = (points) => points.map((p) => p.geometry.coordinates);
-const down = (p, distance) => turf.transformTranslate(p, -cm(distance), BEARING_BT);
-const up = (p, distance) => turf.transformTranslate(p, cm(distance), BEARING_BT);
-const left = (p, distance) => turf.transformTranslate(p, -cm(distance), BEARING_LR);
-const right = (p, distance) => turf.transformTranslate(p, cm(distance), BEARING_LR);
+const down = (p, distance) =>
+  turf.transformTranslate(p, -cm(distance), BEARING_BT);
+const up = (p, distance) =>
+  turf.transformTranslate(p, cm(distance), BEARING_BT);
+const left = (p, distance) =>
+  turf.transformTranslate(p, -cm(distance), BEARING_LR);
+const right = (p, distance) =>
+  turf.transformTranslate(p, cm(distance), BEARING_LR);
 const point = (polygon, index) =>
   turf.point(polygon.geometry.coordinates[0][index]);
 const dist = (p1, p2) => km(turf.distance(p1, p2));
 
+const WALL_HEIGHT = 1;
 const WALL_THICKNESS = 10;
 
 let features = {};
@@ -31,7 +36,7 @@ let foundation = (() => {
   return turf.polygon([map(points)], {
     base_height: 0,
     color: "gray",
-    height: 2.99,
+    height: WALL_HEIGHT - 0.01,
     level: 0,
     name: "Foundation",
   });
@@ -45,11 +50,11 @@ features.bedroom = (() => {
   points.push(up(points[2], 350));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "red",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Bedroom",
+    name: "Soveværelse",
   });
 })();
 
@@ -63,11 +68,11 @@ features.bathroom = (() => {
   points.push(up(points[4], 175));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "cyan",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Bathroom",
+    name: "Badeværelse",
   });
 })();
 
@@ -79,9 +84,9 @@ features.toilet = (() => {
   points.push(up(points[2], 175));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "pink",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
     name: "Toilet",
   });
@@ -95,11 +100,11 @@ features.room1 = (() => {
   points.push(up(points[2], 400));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "purple",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Room 1",
+    name: "Nejra",
   });
 })();
 
@@ -111,11 +116,11 @@ features.room2 = (() => {
   points.push(up(points[2], 400));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "yellow",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Room 2",
+    name: "Dirk",
   });
 })();
 
@@ -127,11 +132,11 @@ features.room3 = (() => {
   points.push(up(points[2], 400));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "blue",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Room 3",
+    name: "Kontor",
   });
 })();
 
@@ -145,11 +150,11 @@ features.room4 = (() => {
   points.push(up(points[4], 225));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "green",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Room 4",
+    name: "Kai",
   });
 })();
 
@@ -162,11 +167,11 @@ features.hallway = (() => {
   points.push(point(features.bathroom, 2));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "lightgrey",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Hallway",
+    name: "Gang",
   });
 })();
 
@@ -178,11 +183,11 @@ features.entrance = (() => {
   points.push(up(points[2], 490));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "lightgray",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Entrance",
+    name: "Bryggers",
   });
 })();
 
@@ -197,11 +202,11 @@ features.livingroom = (() => {
   points.push(points[0]);
   // TODO: Add half-wall
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "brown",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Living Room",
+    name: "Stue",
   });
 })();
 
@@ -222,11 +227,11 @@ features.bigroom = (() => {
   points.push(point(features.entrance, 0));
   points.push(points[0]);
   return turf.polygon([map(points)], {
-    base_height: 3,
+    base_height: WALL_HEIGHT,
     color: "orange",
-    height: 3,
+    height: WALL_HEIGHT,
     level: 1,
-    name: "Big Room",
+    name: "Alrum",
   });
 })();
 
@@ -241,13 +246,13 @@ let shrink_room = (feature, thickness) => {
     let bearing_prev = turf.bearing(prev, curr);
     let bearing_next = turf.bearing(curr, next);
     if (angle == 180) {
-      curr = turf.destination(curr, cm(thickness), bearing_prev-90);
+      curr = turf.destination(curr, cm(thickness), bearing_prev - 90);
     } else if (angle < 180) {
-      curr = turf.destination(curr, cm(thickness), bearing_prev+180);
+      curr = turf.destination(curr, cm(thickness), bearing_prev + 180);
       curr = turf.destination(curr, cm(thickness), bearing_next);
     } else if (angle > 180) {
       curr = turf.destination(curr, cm(thickness), bearing_prev);
-      curr = turf.destination(curr, cm(thickness), bearing_next+180);
+      curr = turf.destination(curr, cm(thickness), bearing_next + 180);
     }
     shrunk.push(curr.geometry.coordinates);
   }
@@ -259,14 +264,26 @@ Object.values(features).forEach((feature) => {
   shrink_room(feature, WALL_THICKNESS);
 });
 
-let walls = turf.difference(turf.featureCollection([foundation].concat(Object.values(features))));
+let walls = turf.difference(
+  turf.featureCollection([foundation].concat(Object.values(features))),
+);
 walls.properties = {
-  base_height: 3,
+  base_height: WALL_HEIGHT,
   color: "gray",
-  height: 5,
+  height: WALL_HEIGHT * 2,
   level: 1,
   name: "Walls",
 };
 
-let featureCollection = turf.featureCollection(Object.values(features).concat(foundation, walls));
-fs.writeFileSync("./data.geojson", JSON.stringify(featureCollection));
+let featureCollection = turf.featureCollection(
+  Object.values(features).concat(foundation, walls),
+);
+fs.writeFileSync("./static/floor1.geojson", JSON.stringify(featureCollection));
+
+let points = turf.featureCollection([
+  turf.centerOfMass(features.room1),
+  turf.centerOfMass(features.room2),
+  turf.centerOfMass(features.room3),
+  turf.centerOfMass(features.room4),
+]);
+fs.writeFileSync("./static/points.geojson", JSON.stringify(points));

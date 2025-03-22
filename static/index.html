@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Extrude polygons for 3D indoor mapping</title>
+<title>Home Automation</title>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
@@ -22,32 +22,23 @@ body { margin: 0; padding: 0; }
       center: [ 9.93809816131456, 57.00256595817176 ],
       zoom: 20,
       pitch: 40,
-      bearing: 20,
-      antialias: true
+      bearing: 0,
+      antialias: true,
+      interactive: false,
   });
 
   map.on('load', async () => {
-      const response = await fetch('/data.geojson');
-      const data = await response.json();
-      let lastModified = response.headers.get('Last-Modified');
+      let lastModified;
       map.addSource('floorplan', {
           'type': 'geojson',
-          'data': data
+          'data': {}
       });
-      const timer = setInterval(async () => {
-          const response = await fetch('/data.geojson');
-          const data = await response.json();
-          const newLastModified = response.headers.get('Last-Modified');
-          if (newLastModified === lastModified) {
-              console.log('No new data');
-              return;
-          }
-          console.log('Updating data');
-          lastModified = newLastModified;
-          map.getSource('floorplan').setData(data);
-      }, 1000);
+      map.addSource('points', {
+          'type': 'geojson',
+          'data': {}
+      });
       map.addLayer({
-          'id': 'room-extrusion',
+          'id': 'floor1',
           'type': 'fill-extrusion',
           'source': 'floorplan',
           'paint': {
@@ -61,9 +52,34 @@ body { margin: 0; padding: 0; }
               'fill-extrusion-base': ['get', 'base_height'],
 
               // Make extrusions slightly opaque to see through indoor walls.
-              'fill-extrusion-opacity': 0.5
+              //'fill-extrusion-opacity': 0.5
           }
       });
+      map.addLayer({
+          'id': 'points',
+          'type': 'symbol',
+          'source': 'points',
+          'layout': {
+            'icon-image': 'rocket',
+            'symbol-z-elevate': true,
+          }
+      });
+      const timer = setInterval(async () => {
+          const response = await fetch('/floor1.geojson');
+          const data = await response.json();
+          const newLastModified = response.headers.get('Last-Modified');
+          if (newLastModified === lastModified) {
+              console.log('No new data');
+              return;
+          }
+          console.log('Updating data');
+          lastModified = newLastModified;
+          map.getSource('floorplan').setData(data);
+
+          const response2 = await fetch('/points.geojson');
+          const data2 = await response2.json();
+          map.getSource('points').setData(data2);
+      }, 1000);
     });
 </script>
 
