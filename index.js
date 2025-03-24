@@ -104,7 +104,7 @@ features.room1 = (() => {
     color: "purple",
     height: WALL_HEIGHT,
     level: 1,
-    name: "Nejra",
+    name: "Værelse 1",
   });
 })();
 
@@ -120,7 +120,7 @@ features.room2 = (() => {
     color: "yellow",
     height: WALL_HEIGHT,
     level: 1,
-    name: "Dirk",
+    name: "Værelse 2",
   });
 })();
 
@@ -154,7 +154,7 @@ features.room4 = (() => {
     color: "green",
     height: WALL_HEIGHT,
     level: 1,
-    name: "Kai",
+    name: "Værelse 4",
   });
 })();
 
