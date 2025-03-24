@@ -2,8 +2,10 @@
 
 ## Pre-requisites
 
-Register at [MapBox](https://www.mapbox.com/) and get an access token.
-Place it in `./static/accesstoken`.
+1. Register at [MapBox](https://www.mapbox.com/) and get an access token.
+  Place it in `./static/accesstoken`.
+2. `npm` (or equivalent)
+3. `podman`
 
 ## Getting started
 
