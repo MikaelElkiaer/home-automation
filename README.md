@@ -1,5 +1,7 @@
 # Home Automation
 
+![image](https://github.com/user-attachments/assets/b1e3e602-8275-46e5-90ec-9ebf84f4e142)
+
 ## Pre-requisites
 
 1. Register at [MapBox](https://www.mapbox.com/) and get an access token.
