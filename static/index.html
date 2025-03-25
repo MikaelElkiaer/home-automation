@@ -6,6 +6,7 @@
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js"></script>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 body { margin: 0; padding: 0; }
 #map { position: absolute; top: 0; bottom: 0; width: 100%; }
@@ -13,87 +14,6 @@ body { margin: 0; padding: 0; }
 </head>
 <body>
 <div id="map"></div>
-<script>
-  (async () => {
-      const accessTokenResponse = await fetch('/accesstoken');
-      const accessToken = await accessTokenResponse.text();
-      console.log(accessToken);
-      mapboxgl.accessToken = accessToken;
-
-      const map = new mapboxgl.Map({
-          container: 'map',
-          // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-          style: 'mapbox://styles/mapbox/dark-v11',
-          center: [ 9.93809816131456, 57.00256595817176 ],
-          bounds: [
-              [9.937931091781024, 57.00253711542363],
-              [9.93826499461693, 57.00259522346104]
-          ], // bounding box (southwest corner, northeast corner)
-          // by setting the bounds your map will automatically center around the bounding box
-          fitBoundsOptions: {
-              padding: 50 // padding to keep the bounds away from the edge of the map
-          },
-          antialias: true,
-          interactive: false,
-      });
-
-      map.on('load', async () => {
-          let lastModified;
-          map.addSource('floorplan', {
-              'type': 'geojson',
-              'data': {}
-          });
-          map.addSource('points', {
-              'type': 'geojson',
-              'data': {}
-          });
-          map.addLayer({
-              'id': 'floor1',
-              'type': 'fill-extrusion',
-              'source': 'floorplan',
-              'paint': {
-                  // Get the `fill-extrusion-color` from the source `color` property.
-                  'fill-extrusion-color': ['get', 'color'],
-
-                  // Get `fill-extrusion-height` from the source `height` property.
-                  'fill-extrusion-height': ['get', 'height'],
-
-                  // Get `fill-extrusion-base` from the source `base_height` property.
-                  'fill-extrusion-base': ['get', 'base_height'],
-
-                  // Make extrusions slightly opaque to see through indoor walls.
-                  //'fill-extrusion-opacity': 0.5
-              }
-          });
-          map.addLayer({
-              'id': 'points',
-              'type': 'symbol',
-              'source': 'points',
-              'layout': {
-                'icon-image': 'rocket',
-                'symbol-z-offset': 5,
-                'symbol-z-elevate': true,
-              }
-          });
-          const timer = setInterval(async () => {
-              const response = await fetch('/floor1.geojson');
-              const data = await response.json();
-              const newLastModified = response.headers.get('Last-Modified');
-              if (newLastModified === lastModified) {
-                  console.log('No new data');
-                  return;
-              }
-              console.log('Updating data');
-              lastModified = newLastModified;
-              map.getSource('floorplan').setData(data);
-
-              const response2 = await fetch('/points.geojson');
-              const data2 = await response2.json();
-              map.getSource('points').setData(data2);
-          }, 1000);
-        });
-    })();
-</script>
-
+<script src="/script.js"></script>
 </body>
 </html>
