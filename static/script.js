@@ -26,6 +26,7 @@ function createMap() {
     // by setting the bounds your map will automatically center around the bounding box
     fitBoundsOptions: {
       padding: 50, // padding to keep the bounds away from the edge of the map
+      pitch: 60,
     },
     antialias: true,
     interactive: true,

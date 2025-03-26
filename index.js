@@ -27,7 +27,7 @@ const point = (polygon, index) =>
 const dist = (p1, p2) => km(turf.distance(p1, p2));
 
 const WALL_HEIGHT = 1;
-const WALL_THICKNESS = 10;
+const WALL_THICKNESS = 5;
 
 let features = {};
 
